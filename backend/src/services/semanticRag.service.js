@@ -2,8 +2,13 @@ const { embedText, cosineSimilarity } = require('./embedding.service')
 
 let cachedChunkEmbeddings = new Map()
 
+const crypto = require('crypto')
+
 function makeCacheKey(chunks) {
-  return chunks.map((c) => `${c.id}:${c.text.length}`).join('|')
+  return crypto
+    .createHash('md5')
+    .update(chunks.map((c) => c.text).join('|'))
+    .digest('hex')
 }
 
 async function semanticRankChunks(question, chunks, limit = 6) {
@@ -23,7 +28,9 @@ async function semanticRankChunks(question, chunks, limit = 6) {
         vector,
       })
     }
-
+    if (cachedChunkEmbeddings.size > 50) {
+      cachedChunkEmbeddings.clear()
+    }
     cachedChunkEmbeddings.set(cacheKey, embeddedChunks)
     console.log('[SEMANTIC RAG] Chunk embeddings ready')
   }
